@@ -18,6 +18,11 @@ setup(
     url='https://www.github.com/lyndsysion/django-changelog/',
     author='Lyndsy Simon',
     author_email='lyndsy@lyndsysimon.com',
+    test_suite="runtests.runtests",
+    install_requires=[
+        'psycopg2>=2.6',
+        'Django>=1.9',
+    ],
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',

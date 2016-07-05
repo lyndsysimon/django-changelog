@@ -27,7 +27,7 @@ def _get_models():
         models = getattr(settings, TRACKED_MODELS_SETTING, {})
 
         __models = {}
-        for model, fields in models.iteritems():
+        for model, fields in models.items():
             app_label, model_name = model.split('.')
             model = ContentType.objects.filter(
                 app_label=app_label,
@@ -67,7 +67,7 @@ def create_log(sender, instance, **kwargs):
 
     changes = {}
     current_fields = _get_field_values(instance)
-    for field, value in current_fields.iteritems():
+    for field, value in current_fields.items():
         initial_value = instance.__changelog_initial_values[field]
         if initial_value != value:
             changes[field] = {
