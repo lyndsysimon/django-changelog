@@ -24,17 +24,26 @@ def _get_models():
                 )
             )
 
-        models = getattr(settings, TRACKED_MODELS_SETTING, {})
+        config = getattr(settings, TRACKED_MODELS_SETTING, {})
 
         __models = {}
-        for model, fields in models.items():
+        for model, fields in config.items():
             app_label, model_name = model.split('.')
-            model = ContentType.objects.filter(
-                app_label=app_label,
-                model=model_name.lower(),
-            ).get().model_class()
+            try:
+                content_type = ContentType.objects.filter(
+                    app_label=app_label,
+                    model=model_name.lower(),
+                ).get()
+            except ContentType.DoesNotExist:
+                # may happen if the tracked models' classes have no tables yet
+                logger.debug(
+                    'Table for `{}` not found, aborting.'.format(model)
+                )
+                # set to None so config loads again next time.
+                __models = None
+                return {}
 
-            __models[model] = tuple(fields)
+            __models[content_type.model_class()] = tuple(fields)
 
     return __models
 
@@ -68,6 +77,7 @@ def create_log(sender, instance, **kwargs):
     changes = {}
     current_fields = _get_field_values(instance)
     for field, value in current_fields.items():
+        # TODO: is it possible that initial values aren't there?
         initial_value = instance.__changelog_initial_values[field]
         if initial_value != value:
             changes[field] = {
