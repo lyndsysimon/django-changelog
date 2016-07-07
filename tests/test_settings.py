@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'tests',
     'changelog',
 ]
 
@@ -40,8 +41,12 @@ WSGI_APPLICATION = 'tests.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'changelog',
+        'USER': 'postgres',
+        'PASSWORD': '',
+        'PORT': '',
+        'HOST': 'localhost',
     }
 }
 
@@ -82,3 +87,33 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'basic': {
+            'format': '%(levelname)s [%(name)s] %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'basic'
+        },
+    },
+    'loggers': {
+        'changelog': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propogate': True,
+        }
+    }
+}
+
+CHANGELOG_TRACKED_FIELDS = {
+    'tests.TrackedModel': (
+        'tracked_char',
+    ),
+}
