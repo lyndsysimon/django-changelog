@@ -55,7 +55,7 @@ class ChangeLog(models.Model):
 
 
 class ChangeSet(object):
-    def __init__(self, first=None, last=None, instance=None):
+    def __init__(self, instance=None, first=None, last=None):
         """A summary of changes to tracked fields between two states.
 
         Any combination of parameters may be passed, provided they refer to
@@ -73,7 +73,7 @@ class ChangeSet(object):
         :param instance:
         """
 
-        if not any((first, last, instance)):
+        if not any((instance, first, last)):
             raise TypeError("At least one keyword argument must be provided.")
 
         # ensure all params refer to the same instance
