@@ -2,8 +2,6 @@ import logging
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import signals
-from django.dispatch import receiver
 
 from changelog.models import ChangeLog, ChangeSet
 
@@ -51,7 +49,7 @@ def get_tracked_models():
 
 
 def create_sync_logs(model=None, queryset=None):
-    """Iterate through all instances of a model, creating sync ``ChangeLog``s"""
+    """Iterate through instances, creating sync ``ChangeLog``s"""
 
     if (
         (model is None and queryset is None) or
