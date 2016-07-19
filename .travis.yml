@@ -6,6 +6,8 @@ env:
   - TOX_ENV=py35-19
 install:
   - pip install tox
+addons:
+  postgresql: "9.4"
 services:
   - postgresql
 before_script:
