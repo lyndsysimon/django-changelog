@@ -7,9 +7,24 @@ from django.db import models
 
 
 class ChangeLog(models.Model):
+
+    ON_SAVE = 0
+    ON_UPDATE = 1
+    ON_SYNC = 2
+    LOG_TYPE_CHOICES = (
+        (ON_SAVE, 'On Save'),
+        (ON_SAVE, 'On Update'),
+        (ON_SAVE, 'On Sync'),
+    )
+    log_type = models.PositiveSmallIntegerField(
+        choices=LOG_TYPE_CHOICES,
+        default=ON_SAVE,
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )
+
     content_type = models.ForeignKey(
         to=ContentType,
         on_delete=models.CASCADE,
@@ -19,6 +34,7 @@ class ChangeLog(models.Model):
         ct_field='content_type',
         fk_field='object_id',
     )
+
     fields = JSONField()
     # Nested dict in the format:
     # {
