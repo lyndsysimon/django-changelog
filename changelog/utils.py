@@ -50,8 +50,19 @@ def get_tracked_models():
     return __models
 
 
-def create_sync_logs(model):
+def create_sync_logs(model=None, queryset=None):
     """Iterate through all instances of a model, creating sync ``ChangeLog``s"""
+
+    if (
+        (model is None and queryset is None) or
+        (model is not None and queryset is not None)
+    ):
+        raise TypeError("A model or queryset must be provided, but not both.")
+
+    if model is None:
+        model = queryset.model
+    elif queryset is None:
+        queryset = model.objects.all()
 
     config = get_tracked_models()
 
@@ -59,8 +70,6 @@ def create_sync_logs(model):
         raise ValueError(
             'Model {} is not a tracked model'.format(model.__class__.__name__)
         )
-
-    queryset = model.objects.all()
 
     for instance in queryset:
         diff = {}
