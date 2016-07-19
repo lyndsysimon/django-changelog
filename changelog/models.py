@@ -90,3 +90,22 @@ class ChangeSet(object):
                 content_type=ContentType.objects.get_for_model(self.instance),
                 object_id=self.instance.pk,
             ).order_by('-created_at').first()
+
+    def iter_logs(self):
+        return ChangeLog.objects.filter(
+            content_type=ContentType.objects.get_for_model(self.instance),
+            object_id=self.instance.pk,
+            created_at__gte=self.first.created_at,
+            created_at__lte=self.last.created_at,
+        ).order_by('created_at').all()
+
+    @property
+    def diff(self):
+        diff = {}
+        for log in self.iter_logs():
+            for field in log.fields:
+                if field not in diff:
+                    diff[field] = log.fields[field]
+                else:
+                    diff[field]['now'] = log.fields[field]['now']
+        return diff

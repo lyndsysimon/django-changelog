@@ -76,9 +76,9 @@ class ChangeLogTestCase(TestCase):
 
 class ChangeSetTestCase(TestCase):
     def setUp(self):
-        self.tracked = factories.TrackedModelFactory()
-        self.tracked.tracked_char = 'first value'
-        self.tracked.save()
+        self.tracked = factories.TrackedModelFactory(
+            tracked_char='first value'
+        )
         self.tracked.tracked_char = 'second value'
         self.tracked.save()
         self.tracked.tracked_char = 'third value'
@@ -87,6 +87,14 @@ class ChangeSetTestCase(TestCase):
         self.tracked.save()
         self.tracked.tracked_char = 'fifth value'
         self.tracked.save()
+        self.tracked.tracked_char = 'sixth value'
+        self.tracked.save()
+        self.logs = list(
+            ChangeLog.objects.filter(
+                content_type=ContentType.objects.get_for_model(self.tracked),
+                object_id=self.tracked.pk,
+            ).order_by('created_at').all()
+        )
 
     def tearDown(self):
         TrackedModel.objects.all().delete()
@@ -100,21 +108,15 @@ class ChangeSetTestCase(TestCase):
         )
 
     def test_init_first_param(self):
-        logs = list(
-            ChangeLog.objects.filter(
-                content_type=ContentType.objects.get_for_model(self.tracked),
-                object_id=self.tracked.pk,
-            ).order_by('created_at').all()
-        )
-        x = ChangeSet(first=logs[2])
+        x = ChangeSet(first=self.logs[2])
 
         self.assertEqual(
-            logs[2].pk,
+            self.logs[2].pk,
             x.first.pk,
         )
 
         self.assertEqual(
-            logs[-1].pk,
+            self.logs[-1].pk,
             x.last.pk,
         )
 
@@ -124,21 +126,15 @@ class ChangeSetTestCase(TestCase):
         )
 
     def test_init_last_param(self):
-        logs = list(
-            ChangeLog.objects.filter(
-                content_type=ContentType.objects.get_for_model(self.tracked),
-                object_id=self.tracked.pk,
-            ).order_by('created_at').all()
-        )
-        x = ChangeSet(last=logs[2])
+        x = ChangeSet(last=self.logs[2])
 
         self.assertEqual(
-            logs[2].pk,
+            self.logs[2].pk,
             x.last.pk,
         )
 
         self.assertEqual(
-            logs[0].pk,
+            self.logs[0].pk,
             x.first.pk,
         )
 
@@ -148,13 +144,6 @@ class ChangeSetTestCase(TestCase):
         )
 
     def test_init_param_mismatch(self):
-        logs = list(
-            ChangeLog.objects.filter(
-                content_type=ContentType.objects.get_for_model(self.tracked),
-                object_id=self.tracked.pk,
-            ).order_by('created_at').all()
-        )
-
         other = factories.TrackedModelFactory()
         other.tracked_char = 'first value'
         other.save()
@@ -172,8 +161,8 @@ class ChangeSetTestCase(TestCase):
         with self.assertRaises(AssertionError):
             ChangeSet(
                 instance=other,
-                first=logs[0],
-                last=logs[-1],
+                first=self.logs[0],
+                last=self.logs[-1],
             )
 
         # first param is from another instance
@@ -181,13 +170,63 @@ class ChangeSetTestCase(TestCase):
             ChangeSet(
                 instance=self.tracked,
                 first=other_logs[0],
-                last=logs[-1],
+                last=self.logs[-1],
             )
 
         # last param is from another instance
         with self.assertRaises(AssertionError):
             ChangeSet(
                 instance=self.tracked,
-                first=logs[0],
+                first=self.logs[0],
                 last=other_logs[0],
             )
+
+    def test_iter_logs(self):
+        x = ChangeSet(instance=self.tracked)
+
+        self.assertEqual(
+            self.logs,
+            list(x.iter_logs()),
+        )
+
+    def test_iter_logs_subset(self):
+        x = ChangeSet(
+            first=self.logs[1],
+            last=self.logs[3],
+        )
+
+        self.assertEqual(
+            self.logs[1:4],
+            list(x.iter_logs()),
+        )
+
+    def test_diff(self):
+        x = ChangeSet(instance=self.tracked)
+        expected = {
+            'tracked_char': {
+                'was': 'first value',
+                'now': 'sixth value',
+            },
+        }
+
+        self.assertEqual(
+            expected,
+            x.diff,
+        )
+
+    def test_diff_subset(self):
+        x = ChangeSet(
+            first=self.logs[1],
+            last=self.logs[3],
+        )
+        expected = {
+            'tracked_char': {
+                'was': 'second value',
+                'now': 'fifth value',
+            },
+        }
+
+        self.assertEqual(
+            expected,
+            x.diff,
+        )
