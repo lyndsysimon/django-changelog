@@ -1,64 +1,28 @@
 import logging
 
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals
 from django.dispatch import receiver
 
 from changelog.models import ChangeLog
+from changelog.utils import get_tracked_models
 
 
 logger = logging.getLogger(__name__)
 
 TRACKED_MODELS_SETTING = 'CHANGELOG_TRACKED_FIELDS'
-__models = None
-
-
-def _get_models():
-    global __models
-    if __models is None:
-        if not hasattr(settings, TRACKED_MODELS_SETTING):
-            logger.warning(
-                "Setting `{}` not found. No changes will be tracked".format(
-                    TRACKED_MODELS_SETTING
-                )
-            )
-
-        config = getattr(settings, TRACKED_MODELS_SETTING, {})
-
-        __models = {}
-        for model, fields in config.items():
-            app_label, model_name = model.split('.')
-            try:
-                content_type = ContentType.objects.filter(
-                    app_label=app_label,
-                    model=model_name.lower(),
-                ).get()
-            except ContentType.DoesNotExist:
-                # may happen if the tracked models' classes have no tables yet
-                logger.debug(
-                    'Table for `{}` not found, aborting.'.format(model)
-                )
-                # set to None so config loads again next time.
-                __models = None
-                return {}
-
-            __models[content_type.model_class()] = tuple(fields)
-
-    return __models
 
 
 def _get_field_values(instance):
     return {
         field: getattr(instance, field)
         for field
-        in _get_models().get(instance.__class__, tuple())
+        in get_tracked_models().get(instance.__class__, tuple())
     }
 
 
 @receiver(signals.post_init, dispatch_uid='changelog.set_initial_values')
 def set_initial_values(sender, instance, **kwargs):
-    models = _get_models()
+    models = get_tracked_models()
     if sender not in models:
         return
 
@@ -70,7 +34,7 @@ def set_initial_values(sender, instance, **kwargs):
 
 @receiver(signals.post_save, dispatch_uid='changelone.create_log')
 def create_log(sender, instance, **kwargs):
-    models = _get_models()
+    models = get_tracked_models()
     if sender not in models:
         return
 

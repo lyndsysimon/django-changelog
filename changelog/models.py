@@ -110,7 +110,7 @@ class ChangeSet(object):
             ).order_by('-created_at').first()
 
     def iter_logs(self):
-        """Return a generator that yields ``ChangeLog``s, in chrono order"""
+        """Return a queryset containing ``ChangeLog``s, in chrono order"""
         query = Q(
             content_type=ContentType.objects.get_for_model(self.instance),
             object_id=self.instance.pk,
