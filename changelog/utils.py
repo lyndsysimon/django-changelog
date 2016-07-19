@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.db.utils import ProgrammingError
 
 from changelog.models import ChangeLog, ChangeSet
 
@@ -40,6 +41,10 @@ def get_tracked_models():
                     'Table for `{}` not found, aborting.'.format(model)
                 )
                 # set to None so config loads again next time.
+                __models = None
+                return {}
+            except ProgrammingError:
+                logger.debug('Database has not been initialized')
                 __models = None
                 return {}
 
