@@ -1,20 +1,11 @@
 from __future__ import absolute_import
 
-from django.test import TestCase
-
 from tests import factories
-from tests.models import TrackedModel, UntrackedModel
+from tests.tests import BaseTestCase
 from changelog.models import ChangeLog
 
 
-class ChangeLogTestCase(TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        TrackedModel.objects.all().delete()
-        UntrackedModel.objects.all().delete()
-
+class ChangeLogTestCase(BaseTestCase):
     def test_no_log_for_initial_creation(self):
         factories.TrackedModelFactory()
 

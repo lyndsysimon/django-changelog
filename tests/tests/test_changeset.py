@@ -1,14 +1,13 @@
 from __future__ import absolute_import
 
 from django.contrib.contenttypes.models import ContentType
-from django.test import TestCase
 
 from tests import factories
-from tests.models import TrackedModel
+from tests.tests import BaseTestCase
 from changelog.models import ChangeLog, ChangeSet
 
 
-class ChangeSetTestCase(TestCase):
+class ChangeSetTestCase(BaseTestCase):
     def setUp(self):
         self.tracked = factories.TrackedModelFactory(
             tracked_char='first value'
@@ -29,9 +28,6 @@ class ChangeSetTestCase(TestCase):
                 object_id=self.tracked.pk,
             ).order_by('created_at').all()
         )
-
-    def tearDown(self):
-        TrackedModel.objects.all().delete()
 
     def test_init_instance_param(self):
         x = ChangeSet(instance=self.tracked)
