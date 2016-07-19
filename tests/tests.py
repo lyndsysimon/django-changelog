@@ -230,3 +230,13 @@ class ChangeSetTestCase(TestCase):
             expected,
             x.diff,
         )
+
+    def test_diff_no_logs(self):
+        x = ChangeSet(
+            instance=factories.TrackedModelFactory()
+        )
+
+        self.assertEqual(
+            {},
+            x.diff,
+        )

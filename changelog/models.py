@@ -4,6 +4,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField
 from django.db import models
+from django.db.models import Q
 
 
 class ChangeLog(models.Model):
@@ -43,6 +44,7 @@ class ChangeLog(models.Model):
     #         'now': '<new value>',
     #     }
     # }
+    # Note that some log types may not include the 'was' key.
 
     def __repr__(self):
         return '<ChangeLog {pk}: {model_name}:{instance_id}>'.format(
@@ -108,12 +110,20 @@ class ChangeSet(object):
             ).order_by('-created_at').first()
 
     def iter_logs(self):
-        return ChangeLog.objects.filter(
+        """Return a generator that yields ``ChangeLog``s, in chrono order"""
+        query = Q(
             content_type=ContentType.objects.get_for_model(self.instance),
             object_id=self.instance.pk,
-            created_at__gte=self.first.created_at,
-            created_at__lte=self.last.created_at,
-        ).order_by('created_at').all()
+        )
+
+        # values will not be set if no logs exist
+        if self.first is not None and self.last is not None:
+            query &= Q(
+                created_at__gte=self.first.created_at,
+                created_at__lte=self.last.created_at
+            )
+
+        return ChangeLog.objects.filter(query).order_by('created_at').all()
 
     @property
     def diff(self):
