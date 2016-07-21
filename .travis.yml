@@ -12,6 +12,7 @@ services:
   - postgresql
 before_script:
   - psql -U postgres -c "create extension postgis"
+  - psql -c 'create database changelog;' -U postgres
 script:
   - tox -e $TOX_ENV
 sudo: false
