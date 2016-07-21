@@ -54,7 +54,11 @@ def get_tracked_models():
 
 
 def create_sync_logs(model=None, queryset=None):
-    """Iterate through instances, creating sync ``ChangeLog``s"""
+    """Create ``ChangeLog``s for model(s) with new changes.
+
+    A ``ChangeLog`` will be created if a model's tracked fields does not match
+    the most recent logged changes, or if a model has no logs.
+    """
 
     if (
         (model is None and queryset is None) or

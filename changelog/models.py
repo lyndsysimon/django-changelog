@@ -4,10 +4,25 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Manager
+
+
+class ChangeLogManager(Manager):
+    def for_instance(self, instance):
+        return self.filter(
+            content_type=ContentType.objects.get_for_model(instance),
+            object_id=instance.pk,
+        )
 
 
 class ChangeLog(models.Model):
+
+    class Meta:
+        ordering = (
+            'created_at',
+        )
+
+    objects = ChangeLogManager()
 
     ON_SAVE = 0
     ON_UPDATE = 1
@@ -98,15 +113,11 @@ class ChangeSet(object):
             self.instance = (self.first or self.last).instance
 
         if self.first is None:
-            self.first = ChangeLog.objects.filter(
-                content_type=ContentType.objects.get_for_model(self.instance),
-                object_id=self.instance.pk,
-            ).order_by('created_at').first()
+            self.first = ChangeLog.objects.for_instance(self.instance).first()
 
         if self.last is None:
-            self.last = ChangeLog.objects.filter(
-                content_type=ContentType.objects.get_for_model(self.instance),
-                object_id=self.instance.pk,
+            self.last = ChangeLog.objects.for_instance(
+                self.instance
             ).order_by('-created_at').first()
 
     def iter_logs(self):
@@ -131,7 +142,11 @@ class ChangeSet(object):
         for log in self.iter_logs():
             for field in log.fields:
                 if field not in diff:
-                    diff[field] = log.fields[field]
-                else:
-                    diff[field]['now'] = log.fields[field]['now']
-        return diff
+                    diff[field] = {'was': log.fields[field]['now']}
+                diff[field]['now'] = log.fields[field]['now']
+
+        return {
+            k: v
+            for k, v in diff.items()
+            if v['was'] != v['now']
+        }
